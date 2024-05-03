@@ -1,7 +1,7 @@
 package main
 
 import (
-	kafka "github.com/mnm458/zeke-relayer/pkg/services/kafka"
+	// kafka "github.com/mnm458/zeke-relayer/pkg/services/kafka"
 	"context"
 	"fmt"
 	"log"
@@ -41,27 +41,50 @@ func main() {
 		panic(err)
 	}
 
-	ch := make(chan *types.Header, 1024)
-	sub, err := client.SubscribeNewHead(context.Background(), ch)
-
-	if err != nil {
-		panic(err)
+	//Ramp contract Address
+	contractAddress := common.HexToAddress("0x147B8eb97fD247D06C4006D269c90C1908Fb5D54")
+	query := ethereum.FilterQuery{
+  	Addresses: []common.Address{contractAddress},
 	}
 
-	fmt.Println("---subscribe-----")
+	ch := make(chan *types.Header, 1024)
+	sub, err := client.SubscribeNewHead(context.Background(), ch)
+	logs := make(chan types.Log)
 
-	go func() {
-		time.Sleep(10 * time.Second)
-		fmt.Println("---unsubscribe-----")
-		sub.Unsubscribe()
-	}()
+	sub, err := client.SubscribeFilterLogs(context.Background(), query, logs)
+	if err != nil {
+  		log.Fatal(err)
+	}
 
-	go func() {
-		for c := range ch {
-			fmt.Println(c.Number)
+	for {
+		select {
+		case err := <-sub.Err():
+		  log.Fatal(err)
+		case vLog := <-logs:
+		  fmt.Println(vLog) // pointer to event log
 		}
-	}()
+	  }
+	  
 
-	<-sub.Err()
+
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// fmt.Println("---subscribe-----")
+
+	// go func() {
+	// 	time.Sleep(10 * time.Second)
+	// 	fmt.Println("---unsubscribe-----")
+	// 	sub.Unsubscribe()
+	// }()
+
+	// go func() {
+	// 	for c := range ch {
+	// 		fmt.Println(c.Number)
+	// 	}
+	// }()
+
+	// <-sub.Err()
 
 }
