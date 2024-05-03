@@ -1,6 +1,8 @@
 package main
 
 import (
+	kafka "zeke-relayer/pkg/services/kafka"
+
 	"context"
 	"fmt"
 	"os"
