@@ -1,17 +1,21 @@
 package main
 
 import (
-	// kafka "github.com/mnm458/zeke-relayer/pkg/services/kafka"
+	kafka "github.com/mnm458/zeke-relayer/pkg/services/kafka"
 	"context"
 	"fmt"
 	"log"
 	"os"
-	"time"
-
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/joho/godotenv"
+	"github.com/ethereum/go-ethereum"
+    "github.com/ethereum/go-ethereum/common"
 )
+
+type Transaction struct {
+
+}
 
 func main() {
 
@@ -42,49 +46,25 @@ func main() {
 	}
 
 	//Ramp contract Address
-	contractAddress := common.HexToAddress("0x147B8eb97fD247D06C4006D269c90C1908Fb5D54")
-	query := ethereum.FilterQuery{
-  	Addresses: []common.Address{contractAddress},
-	}
+	contractAddress := common.HexToAddress("0x3782CB11C629eFA26Fa9B3DAB9C2d4f4eCFCBAc4")
+    query := ethereum.FilterQuery{
+        Addresses: []common.Address{contractAddress},
+    }
 
-	ch := make(chan *types.Header, 1024)
-	sub, err := client.SubscribeNewHead(context.Background(), ch)
-	logs := make(chan types.Log)
+    logs := make(chan types.Log)
+    sub, err := client.SubscribeFilterLogs(context.Background(), query, logs)
+    if err != nil {
+        log.Fatal(err)
+    }
 
-	sub, err := client.SubscribeFilterLogs(context.Background(), query, logs)
-	if err != nil {
-  		log.Fatal(err)
-	}
-
-	for {
-		select {
-		case err := <-sub.Err():
-		  log.Fatal(err)
-		case vLog := <-logs:
-		  fmt.Println(vLog) // pointer to event log
-		}
-	  }
-	  
-
-
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// fmt.Println("---subscribe-----")
-
-	// go func() {
-	// 	time.Sleep(10 * time.Second)
-	// 	fmt.Println("---unsubscribe-----")
-	// 	sub.Unsubscribe()
-	// }()
-
-	// go func() {
-	// 	for c := range ch {
-	// 		fmt.Println(c.Number)
-	// 	}
-	// }()
-
-	// <-sub.Err()
-
+    for {
+        select {
+        case err := <-sub.Err():
+            log.Fatal(err)
+        case vLog := <-logs:
+            fmt.Println(vLog.TxHash) 
+			kafka.Produce(vLog.TxHash.Hex(), args)
+        }
+    }
 }
+

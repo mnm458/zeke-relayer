@@ -40,11 +40,23 @@ func ReadConfig() kafka.ConfigMap {
     return m
 }
 
-func Produce() {
+func Produce( txHash string, chain string ) {
+    fmt.Println(chain)
+    // if chain == "base"{
+    //     //TODO
+    // } elif chain == "mantle"{
+    //     //TODO
+    // } else{
+    //     log.Fatal("Invalid chain")
+    //}
 	// creates a new producer instance
 	conf := ReadConfig()
-	p, _ := kafka.NewProducer(&conf)
-	topic := "orders-topic"
+    p, err := kafka.NewProducer(&conf)
+    if err != nil {
+        fmt.Printf("Failed to create producer: %s\n", err)
+        return
+    }
+	topic := "orders_topic"
 
 	// go-routine to handle message delivery reports and
 	// possibly other event types (errors, stats, etc)
@@ -66,10 +78,14 @@ func Produce() {
 	p.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 			Key:            []byte("key"),
-			Value:          []byte("value"),
+			Value:          []byte(txHash),
 	}, nil)
 
-	// send any outstanding or buffered messages to the Kafka broker and close the connection
-	p.Flush(15 * 1000)
+    remainingMsgs := p.Flush(100 * 1000)
+    fmt.Println("Remaining messages: ", remainingMsgs)
+    if remainingMsgs > 0 {
+        fmt.Printf("Failed to deliver %d messages\n", remainingMsgs)
+    }
+
 	p.Close()
 }
