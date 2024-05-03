@@ -1,8 +1,7 @@
 package main
 
 import (
-	kafka "zeke-relayer/pkg/services/kafka"
-
+	kafka "github.com/mnm458/zeke-relayer/pkg/services/kafka"
 	"context"
 	"fmt"
 	"log"
